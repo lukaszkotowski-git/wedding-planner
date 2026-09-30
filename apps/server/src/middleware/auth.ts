@@ -34,3 +34,11 @@ export function requireWeddingRole(minRole: WeddingRole): RequestHandler {
     next();
   };
 }
+
+/** Dla tras już za requireWeddingRole("VIEWER"): wymaga wyższej roli do zapisu. */
+export function requireRole(minRole: WeddingRole): RequestHandler {
+  return (req, _res, next) => {
+    if (!req.weddingRole || !hasRole(req.weddingRole, minRole)) throw forbidden();
+    next();
+  };
+}

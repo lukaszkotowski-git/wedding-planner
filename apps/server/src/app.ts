@@ -2,14 +2,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { toNodeHandler } from "better-auth/node";
 import express from "express";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { pinoHttp } from "pino-http";
 import { env } from "./env";
 import { auth } from "./lib/auth";
 import { logger } from "./lib/logger";
+import { limiter } from "./lib/rate-limit";
 import { errorHandler, notFoundHandler } from "./middleware/errors";
+import { mediaRouter } from "./modules/media/routes";
 import { publicRouter } from "./modules/public/routes";
+import { invitationsRouter } from "./modules/team/routes";
 import { weddingsRouter } from "./modules/weddings/routes";
 import { mountSpa } from "./spa";
 
@@ -21,9 +23,6 @@ export function createApp() {
   app.use(helmet({ contentSecurityPolicy: env.NODE_ENV === "production" ? undefined : false }));
   app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === "/api/health" } }));
 
-  const limiter = (limit: number) =>
-    rateLimit({ windowMs: 60_000, limit, standardHeaders: "draft-8", legacyHeaders: false });
-
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true });
   });
@@ -34,7 +33,9 @@ export function createApp() {
   app.use(express.json({ limit: "1mb" }));
   app.use("/api/public", limiter(60), publicRouter);
   app.use("/api/weddings", limiter(300), weddingsRouter);
+  app.use("/api/invitations", limiter(30), invitationsRouter);
   app.use("/api", notFoundHandler);
+  app.use("/media", mediaRouter);
 
   if (env.NODE_ENV === "production") {
     const here = path.dirname(fileURLToPath(import.meta.url));

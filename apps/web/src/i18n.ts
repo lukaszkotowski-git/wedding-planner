@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, LOCALES } from "@wedding/shared";
+import { DEFAULT_LOCALE, LOCALES } from "@wedding/shared/locales";
 import { resources } from "@wedding/shared/i18n";
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";

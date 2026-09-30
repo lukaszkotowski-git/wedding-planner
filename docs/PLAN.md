@@ -1,6 +1,6 @@
 # Wedding Planner: plan produktu i implementacji
 
-> Status: szkic 2 (2026-09-30). Faza 0 zrealizowana. Pozostałe otwarte pytania w sekcji 11.
+> Status: szkic 3 (2026-09-30). Fazy 0 i 1 zrealizowane. Pozostałe otwarte pytania w sekcji 11.
 
 ## 1. Decyzje produktowe
 
@@ -73,13 +73,13 @@ Bazowy stack użytkownika plus uzupełnienia:
 | **Formularze** | react-hook-form + @hookform/resolvers/zod |
 | **i18n** | i18next + react-i18next (klient), i18next na serwerze (maile, eksport) |
 | **Zadania w tle** | **pg-boss** (kolejka na Postgresie, bez Redisa): przypomnienia, maile, retencja RODO |
-| **Pliki** | S3-compatible: **MinIO** jako usługa w Dokploy (alternatywnie Cloudflare R2); `sharp` do miniatur |
+| **Pliki** | S3-compatible przez `@aws-sdk/client-s3`. Dev: SeaweedFS (MinIO nie publikuje już obrazów Dockera). Prod: Cloudflare R2, Garage lub SeaweedFS w Dokploy. `sharp`: WebP max 1200 px, bez EXIF |
 | **Excel** | exceljs (streaming, wiele arkuszy) |
 | **PDF** | pdfmake lub @react-pdf/renderer (plan stołów, lista gości dla sali) |
 | **Kalendarz** | FullCalendar (widok miesiąc/tydzień/lista) |
 | **Plan stołów** | dnd-kit |
 | **QR** | qrcode (PNG/SVG do zaproszeń) |
-| **Anty-spam** | Cloudflare Turnstile na publicznych formularzach + express-rate-limit |
+| **Anty-spam** | express-rate-limit (10/min na publicznych formularzach); Cloudflare Turnstile w fazie 3 |
 | **Płatności** | Stripe (karty, BLIK, Przelewy24): patrz 11 |
 | **Maile** | nodemailer przez SMTP. Start: Gmail (hasło aplikacji, limit ~500/dzień, Workspace ~2000). Przed publicznym startem: SES / Postmark / Brevo (tylko zmiana env) |
 | **Testy** | Vitest (unit/API, supertest), Playwright (e2e ścieżek RSVP i rezerwacji) |
@@ -107,7 +107,7 @@ wedding-planner/
 │   └── shared/         # schematy zod, pakiety/limity, role, tłumaczenia PL/EN (web + maile)
 ├── docs/
 ├── Dockerfile          # multi-stage: build web + server → jeden obraz
-└── docker-compose.yml  # lokalnie: postgres :5442, minio :9010/:9011, mailpit :1035/:8035
+└── docker-compose.yml  # lokalnie: postgres :5442, s3 (SeaweedFS) :9010, mailpit :1035/:8035
 ```
 
 ## 4. Model danych (zarys)
@@ -216,7 +216,7 @@ Opcja: strona chroniona hasłem (np. „wpisz kod z zaproszenia”).
 2. Dopasowanie wystarczy (decyzja: bez dodatkowej weryfikacji) → ten sam formularz co 6.2.
    Przy kilku kandydatach gość wybiera swoje gospodarstwo z listy (bez ujawniania pozostałych danych).
 3. Brak dopasowania → `JoinRequest` → para akceptuje/odrzuca w panelu → mail do gościa z linkiem dedykowanym.
-4. Turnstile + rate limit per IP.
+4. Rate limit per IP (Turnstile w fazie 3).
 
 ### 6.4 Rezerwacja prezentu
 1. Gość klika „Rezerwuję”, podaje imię + e-mail (+ kwotę dla składkowego).
@@ -260,7 +260,7 @@ Nagłówki pogrubione, zamrożony pierwszy wiersz, autofiltr, szerokości kolumn
 ### Faza 0: Fundament ✅
 - [x] Monorepo npm workspaces, TS strict, Vitest
 - [ ] ESLint/Prettier
-- [x] docker-compose: Postgres, MinIO, Mailpit
+- [x] docker-compose: Postgres, S3 (SeaweedFS), Mailpit
 - [x] Prisma + migracja `init` (Better Auth + Wedding + WeddingMember)
 - [x] Express 5: moduły, błędy, walidacja zod, pino (z redakcją cookies), rate limit, helmet
 - [x] Better Auth (email+hasło, weryfikacja maila, reset hasła, Google opcjonalnie)
@@ -272,18 +272,24 @@ Nagłówki pogrubione, zamrożony pierwszy wiersz, autofiltr, szerokości kolumn
 - [ ] Deploy na Dokploy (staging): wymaga domeny i dostępu do VPS
 - [ ] Strona resetu hasła w UI
 
-### Faza 1: MVP („można wysłać zaproszenia”)
-- [ ] Onboarding: tworzenie wesela (imiona, data, typ ceremonii, slug, język)
-- [ ] Członkowie zespołu + zaproszenia mailowe
-- [ ] Części wydarzenia + lokalizacje
-- [ ] Strona wydarzenia `/w/:slug` z OG tags
-- [ ] Goście: gospodarstwa, osoby, dzieci, zgoda na +1, strony, tagi
-- [ ] Menu konfigurowalne + progi cenowe dzieci
-- [ ] RSVP dedykowany (token + QR) i otwarty (dopasowanie + JoinRequest)
-- [ ] Prezenty: CRUD, zdjęcia (upload + miniatury), rezerwacja z weryfikacją maila, składkowe, anulowanie
-- [ ] Dashboard: statystyki RSVP i menu, dni do ślubu
-- [ ] Eksport Excel (goście, menu, prezenty, podsumowanie)
-- [ ] Zgody RODO u gościa + polityka prywatności, regulamin
+### Faza 1: MVP („można wysłać zaproszenia”) ✅
+- [x] Onboarding: tworzenie wesela z domyślnymi częściami (ceremonia 15:00, przyjęcie 17:00), menu (mięsne, wege, dziecięce) i progami dzieci (0–3: 0%, 4–12: 50%)
+- [x] Członkowie zespołu + zaproszenia mailowe (akceptuje tylko konto z tym samym e-mailem, limit pakietu)
+- [x] Części wydarzenia + lokalizacje (czas „ścienny”, bez przesunięć strefowych)
+- [x] Strona wydarzenia `/w/:slug`: powitanie, plan dnia z mapą, RSVP, prezenty, koperta
+- [x] Goście: gospodarstwa, osoby, dzieci (wiek, krzesełko, osobne miejsce), zgoda na +1, strony, tagi, zaproszenie na wybrane części
+- [x] Menu konfigurowalne (aktywne/nieaktywne, dziecięce) + progi cenowe dzieci
+- [x] RSVP dedykowany (token 22 znaki + QR SVG, regeneracja linku) i otwarty (dopasowanie trigramowe + prośby o dołączenie)
+- [x] Blokada odpowiedzi po wysłaniu, odblokowanie przez parę, termin RSVP
+- [x] Prezenty: CRUD, zdjęcia (S3 + WebP), rezerwacja z potwierdzeniem mailem (30 min), składkowe, anulowanie linkiem, ukryte
+- [x] Rezerwacje odporne na wyścigi (SERIALIZABLE + ponowienia, test 6 równoległych prób)
+- [x] Dashboard: RSVP, obecność per część, menu, dzieci per próg, logistyka, prezenty
+- [x] Eksport Excel: Start = goście; Standard/Premium = podsumowanie, goście, menu dla sali, dzieci, prezenty
+- [x] Zgody RODO (rejestr z wersją treści i skrótem IP), szkic polityki prywatności i regulaminu
+- [x] Limity pakietów egzekwowane na serwerze (goście z miejscami na +1, prezenty, zespół, prezenty składkowe)
+- [x] Testy integracyjne na prawdziwej bazie (27) + testy logiki (15)
+- [ ] Przegląd UI w przeglądarce (desktop + telefon)
+- [ ] Treść polityki prywatności i regulaminu do weryfikacji prawnej
 
 ### Faza 2: Planowanie
 - [ ] Szablony zadań PL/EN per typ ceremonii, generowanie, przeliczanie dat
@@ -312,7 +318,7 @@ Nagłówki pogrubione, zamrożony pierwszy wiersz, autofiltr, szerokości kolumn
 - [ ] Płatności Stripe (BLIK/P24/karta), limity planu FREE vs PREMIUM
 - [ ] Panel superadmina: wesela, użytkownicy, płatności, nadużycia
 - [ ] Faktury (Stripe Invoicing lub integracja z Fakturownią/inFaktem)
-- [ ] Monitoring, backupy Postgresa i MinIO (Dokploy + zewnętrzny S3), alerty
+- [ ] Monitoring, backupy Postgresa i plików S3 (Dokploy + zewnętrzny S3), alerty
 
 ### Backlog
 - [ ] **Plan dla wedding plannerów (B2B)**: jedno konto, wiele wesel, branding konsultanta, rozliczenie per wesele lub subskrypcja. Model `WeddingMember` już to wspiera (użytkownik może być członkiem wielu wesel).
@@ -323,7 +329,7 @@ Nagłówki pogrubione, zamrożony pierwszy wiersz, autofiltr, szerokości kolumn
 ## 10. Bezpieczeństwo i RODO
 
 - Tokeny gospodarstw: 128-bit losowe (base62, ~22 znaki), nie ID. Rotacja przez parę.
-- Publiczne endpointy: Turnstile, rate limit, brak enumeracji (jednakowe odpowiedzi).
+- Publiczne endpointy: rate limit (Turnstile w fazie 3), brak enumeracji (jednakowe odpowiedzi).
 - Para jest **administratorem** danych gości, SaaS jest **podmiotem przetwarzającym**: potrzebna umowa powierzenia (DPA) w regulaminie.
 - Minimalizacja: data urodzenia dziecka tylko jeśli potrzebna (alternatywnie wiek lub przedział).
 - Dane o diecie/alergiach mogą ujawniać dane o zdrowiu: wyraźna zgoda, retencja.

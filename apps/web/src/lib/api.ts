@@ -2,21 +2,33 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     public code: string,
-    public issues?: Record<string, string[]>,
+    public details?: Record<string, unknown> & { issues?: Record<string, string[]> },
   ) {
     super(code);
   }
 }
 
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`/api${path}`, {
-    credentials: "include",
-    ...init,
-    headers: { "Content-Type": "application/json", ...init.headers },
-  });
+async function handle<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as { error?: string; issues?: Record<string, string[]> };
-    throw new ApiError(res.status, body.error ?? "unknown_error", body.issues);
+    const body = (await res.json().catch(() => ({}))) as { error?: string } & Record<string, unknown>;
+    const { error, ...details } = body;
+    throw new ApiError(res.status, error ?? "unknown_error", details);
   }
   return (res.status === 204 ? undefined : await res.json()) as T;
+}
+
+export async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+  const { json, ...rest } = init;
+  const res = await fetch(`/api${path}`, {
+    credentials: "include",
+    ...rest,
+    body: json !== undefined ? JSON.stringify(json) : rest.body,
+    headers: { "Content-Type": "application/json", ...rest.headers },
+  });
+  return handle<T>(res);
+}
+
+export async function apiUpload<T>(path: string, form: FormData): Promise<T> {
+  const res = await fetch(`/api${path}`, { method: "POST", credentials: "include", body: form });
+  return handle<T>(res);
 }

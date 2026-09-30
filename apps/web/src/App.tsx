@@ -1,65 +1,39 @@
-import type { ReactNode } from "react";
+import { useTheme } from "next-themes";
+import { lazy, Suspense } from "react";
 import { useTranslation } from "react-i18next";
-import { Redirect, Route, Switch } from "wouter";
-import { AppHeader } from "@/components/app-header";
-import { useSession } from "@/lib/auth-client";
-import { DashboardPage } from "@/pages/dashboard";
-import { LandingPage } from "@/pages/landing";
-import { LoginPage, RegisterPage } from "@/pages/auth";
-import { PublicWeddingPage } from "@/pages/public-wedding";
+import { Route, Switch } from "wouter";
+import { Toaster } from "sonner";
+import { GiftActionPage } from "@/pages/public/gift-action-page";
+import { RsvpPage } from "@/pages/public/rsvp-page";
+import { PublicWeddingPage } from "@/pages/public/wedding-page";
 
-function RequireAuth({ children }: { children: ReactNode }) {
-  const { data, isPending } = useSession();
-  const { t } = useTranslation();
-  if (isPending) return <p className="container py-16 text-muted-foreground">{t("common.loading")}</p>;
-  if (!data) return <Redirect to="/login" />;
-  return children;
-}
-
-function GuestOnly({ children }: { children: ReactNode }) {
-  const { data, isPending } = useSession();
-  if (isPending) return null;
-  if (data) return <Redirect to="/app" />;
-  return children;
-}
+// Panel, logowanie i landing w osobnych fragmentach: goście na stronie wesela ich nie pobierają.
+const AppShell = lazy(() => import("@/app-shell").then((m) => ({ default: m.AppShell })));
 
 export function App() {
   const { t } = useTranslation();
+  const { resolvedTheme } = useTheme();
   return (
-    <Switch>
-      {/* Strona gościa: bez nagłówka panelu */}
-      <Route path="/w/:slug" nest>
-        {(params) => <PublicWeddingPage slug={params.slug} />}
-      </Route>
-
-      <Route>
-        <AppHeader />
-        <main>
-          <Switch>
-            <Route path="/">
-              <LandingPage />
-            </Route>
-            <Route path="/login">
-              <GuestOnly>
-                <LoginPage />
-              </GuestOnly>
-            </Route>
-            <Route path="/register">
-              <GuestOnly>
-                <RegisterPage />
-              </GuestOnly>
-            </Route>
-            <Route path="/app" nest>
-              <RequireAuth>
-                <DashboardPage />
-              </RequireAuth>
-            </Route>
-            <Route>
-              <p className="container py-16 text-muted-foreground">{t("common.notFound")}</p>
-            </Route>
-          </Switch>
-        </main>
-      </Route>
-    </Switch>
+    <>
+      <Switch>
+        <Route path="/w/:slug" nest>
+          {({ slug }) => (
+            <Switch>
+              <Route path="/r/:token">{({ token }) => <RsvpPage token={token} />}</Route>
+              <Route path="/gift" component={GiftActionPage} />
+              <Route>
+                <PublicWeddingPage slug={slug} />
+              </Route>
+            </Switch>
+          )}
+        </Route>
+        <Route>
+          <Suspense fallback={<p className="container py-16 text-muted-foreground">{t("common.loading")}</p>}>
+            <AppShell />
+          </Suspense>
+        </Route>
+      </Switch>
+      <Toaster theme={resolvedTheme === "dark" ? "dark" : "light"} richColors position="top-center" />
+    </>
   );
 }

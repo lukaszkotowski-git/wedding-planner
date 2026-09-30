@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CEREMONY_TYPES, LOCALES, createWeddingSchema, suggestSlug, type CreateWeddingInput } from "@wedding/shared";
-import { ExternalLink, Plus } from "lucide-react";
+import { ArrowRight, ExternalLink, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "wouter";
 import { Field } from "@/components/field";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,7 +68,7 @@ export function DashboardPage() {
                   {days >= 0 && <> · {t("dashboard.daysLeft", { count: days })}</>}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex items-center justify-between gap-2">
                 <a
                   href={`/w/${w.slug}`}
                   target="_blank"
@@ -77,6 +78,12 @@ export function DashboardPage() {
                   /w/{w.slug}
                   <ExternalLink className="size-3.5" />
                 </a>
+                <Button asChild size="sm">
+                  <Link href={`/app/w/${w.id}`}>
+                    {t("panel.overview")}
+                    <ArrowRight />
+                  </Link>
+                </Button>
               </CardContent>
             </Card>
           );
@@ -89,6 +96,7 @@ export function DashboardPage() {
 function CreateWeddingForm({ onDone }: { onDone: () => void }) {
   const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
+  const [, navigate] = useLocation();
   const [slugEdited, setSlugEdited] = useState(false);
   const form = useForm<CreateWeddingInput>({
     resolver: zodResolver(createWeddingSchema),
@@ -104,10 +112,11 @@ function CreateWeddingForm({ onDone }: { onDone: () => void }) {
   const { errors } = form.formState;
 
   const mutation = useMutation({
-    mutationFn: (input: CreateWeddingInput) => api("/weddings", { method: "POST", body: JSON.stringify(input) }),
-    onSuccess: async () => {
+    mutationFn: (input: CreateWeddingInput) => api<WeddingSummary>("/weddings", { method: "POST", json: input }),
+    onSuccess: async (w) => {
       await queryClient.invalidateQueries({ queryKey: ["weddings"] });
       onDone();
+      navigate(`/app/w/${w.id}`);
     },
     onError: (e) => {
       if (e instanceof ApiError && e.code === "slug_taken") form.setError("slug", { message: t("wedding.slugTaken") });

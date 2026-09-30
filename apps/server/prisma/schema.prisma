@@ -10,17 +10,18 @@ datasource db {
 // ─── Better Auth ────────────────────────────────────────────────
 
 model User {
-  id            String    @id
-  name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false)
-  image         String?
-  locale        String    @default("pl")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  sessions      Session[]
-  accounts      Account[]
-  memberships   WeddingMember[]
+  id              String           @id
+  name            String
+  email           String           @unique
+  emailVerified   Boolean          @default(false)
+  image           String?
+  locale          String           @default("pl")
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  sessions        Session[]
+  accounts        Account[]
+  memberships     WeddingMember[]
+  invitationsSent TeamInvitation[]
 
   @@map("user")
 }
@@ -93,21 +94,42 @@ enum WeddingRole {
   VIEWER
 }
 
+enum RsvpMode {
+  DEDICATED
+  OPEN
+  BOTH
+}
+
 model Wedding {
-  id             String          @id @default(cuid())
-  slug           String          @unique
-  partnerOneName String
-  partnerTwoName String
-  date           DateTime        @db.Date
-  timezone       String          @default("Europe/Warsaw")
-  locale         String          @default("pl")
-  ceremonyType   CeremonyType
-  plan           PlanId          @default(START)
-  planValidUntil DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  deletedAt      DateTime?
-  members        WeddingMember[]
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  partnerOneName   String
+  partnerTwoName   String
+  date             DateTime          @db.Date
+  timezone         String            @default("Europe/Warsaw")
+  locale           String            @default("pl")
+  ceremonyType     CeremonyType
+  plan             PlanId            @default(START)
+  planValidUntil   DateTime?
+  rsvpMode         RsvpMode          @default(BOTH)
+  rsvpDeadline     DateTime?         @db.Date
+  welcomeMessage   String?
+  giftsIntro       String?
+  cashGiftInfo     String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  deletedAt        DateTime?
+  members          WeddingMember[]
+  teamInvitations  TeamInvitation[]
+  eventParts       EventPart[]
+  mealOptions      MealOption[]
+  childPriceTiers  ChildPriceTier[]
+  households       Household[]
+  guests           Guest[]
+  joinRequests     JoinRequest[]
+  gifts            Gift[]
+  giftReservations GiftReservation[]
+  consents         ConsentLog[]
 
   @@map("wedding")
 }
@@ -124,4 +146,263 @@ model WeddingMember {
   @@unique([weddingId, userId])
   @@index([userId])
   @@map("wedding_member")
+}
+
+model TeamInvitation {
+  id          String      @id @default(cuid())
+  weddingId   String
+  wedding     Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  email       String
+  role        WeddingRole
+  token       String      @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  invitedById String
+  invitedBy   User        @relation(fields: [invitedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+
+  @@index([weddingId])
+  @@map("team_invitation")
+}
+
+// ─── Części wydarzenia ──────────────────────────────────────────
+
+model EventPart {
+  id           String           @id @default(cuid())
+  weddingId    String
+  wedding      Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name         String
+  startsAt     DateTime
+  endsAt       DateTime?
+  locationName String?
+  address      String?
+  mapUrl       String?
+  notes        String?
+  order        Int              @default(0)
+  households   Household[]
+  rsvps        GuestEventRsvp[]
+
+  @@index([weddingId])
+  @@map("event_part")
+}
+
+// ─── Menu i dzieci ──────────────────────────────────────────────
+
+model MealOption {
+  id          String  @id @default(cuid())
+  weddingId   String
+  wedding     Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  forChildren Boolean @default(false)
+  order       Int     @default(0)
+  active      Boolean @default(true)
+  guests      Guest[]
+
+  @@index([weddingId])
+  @@map("meal_option")
+}
+
+model ChildPriceTier {
+  id           String  @id @default(cuid())
+  weddingId    String
+  wedding      Wedding @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  fromAge      Int
+  toAge        Int
+  /// Procent ceny talerza dorosłego (0–100).
+  pricePercent Int
+
+  @@index([weddingId])
+  @@map("child_price_tier")
+}
+
+// ─── Goście ─────────────────────────────────────────────────────
+
+enum GuestSide {
+  PARTNER_ONE
+  PARTNER_TWO
+  BOTH
+}
+
+enum HouseholdSource {
+  MANUAL
+  OPEN_FORM
+}
+
+enum GuestType {
+  ADULT
+  CHILD
+}
+
+model Household {
+  id                 String          @id @default(cuid())
+  weddingId          String
+  wedding            Wedding         @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  name               String
+  /// Sekret w linku dedykowanym /w/:slug/r/:token
+  token              String          @unique
+  email              String?
+  phone              String?
+  side               GuestSide       @default(BOTH)
+  tags               String[]        @default([])
+  notes              String?
+  source             HouseholdSource @default(MANUAL)
+  /// Części wydarzenia, na które zaproszono gospodarstwo.
+  invitedParts       EventPart[]
+  needsAccommodation Boolean?
+  needsTransport     Boolean?
+  messageToCouple    String?
+  respondedAt        DateTime?
+  /// Po wysłaniu RSVP odpowiedź jest zablokowana; para może odblokować.
+  locked             Boolean         @default(false)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  guests             Guest[]
+  joinRequest        JoinRequest?
+  consents           ConsentLog[]
+
+  @@index([weddingId])
+  @@map("household")
+}
+
+model Guest {
+  id                String           @id @default(cuid())
+  weddingId         String
+  wedding           Wedding          @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  householdId       String
+  household         Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  firstName         String
+  lastName          String
+  type              GuestType        @default(ADULT)
+  /// Wiek dziecka w dniu ślubu (minimalizacja danych: bez daty urodzenia).
+  age               Int?
+  plusOneAllowed    Boolean          @default(false)
+  isPlusOne         Boolean          @default(false)
+  plusOneOfId       String?          @unique
+  plusOneOf         Guest?           @relation("PlusOne", fields: [plusOneOfId], references: [id], onDelete: Cascade)
+  plusOne           Guest?           @relation("PlusOne")
+  mealOptionId      String?
+  mealOption        MealOption?      @relation(fields: [mealOptionId], references: [id], onDelete: SetNull)
+  dietNotes         String?
+  needsHighChair    Boolean          @default(false)
+  needsSeparateSeat Boolean          @default(true)
+  order             Int              @default(0)
+  createdAt         DateTime         @default(now())
+  rsvps             GuestEventRsvp[]
+
+  @@index([weddingId])
+  @@index([householdId])
+  @@map("guest")
+}
+
+model GuestEventRsvp {
+  guestId     String
+  guest       Guest     @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  eventPartId String
+  eventPart   EventPart @relation(fields: [eventPartId], references: [id], onDelete: Cascade)
+  attending   Boolean
+
+  @@id([guestId, eventPartId])
+  @@map("guest_event_rsvp")
+}
+
+enum JoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model JoinRequest {
+  id          String            @id @default(cuid())
+  weddingId   String
+  wedding     Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  email       String
+  message     String?
+  locale      String            @default("pl")
+  status      JoinRequestStatus @default(PENDING)
+  householdId String?           @unique
+  household   Household?        @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  createdAt   DateTime          @default(now())
+  decidedAt   DateTime?
+
+  @@index([weddingId, status])
+  @@map("join_request")
+}
+
+// ─── Prezenty ───────────────────────────────────────────────────
+
+model Gift {
+  id           String            @id @default(cuid())
+  weddingId    String
+  wedding      Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  url          String?
+  imageKey     String?
+  /// Kwoty w groszach.
+  priceCents   Int?
+  isGroupGift  Boolean           @default(false)
+  targetCents  Int?
+  order        Int               @default(0)
+  hidden       Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  reservations GiftReservation[]
+
+  @@index([weddingId])
+  @@map("gift")
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model GiftReservation {
+  id           String            @id @default(cuid())
+  weddingId    String
+  wedding      Wedding           @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  giftId       String
+  gift         Gift              @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  amountCents  Int?
+  locale       String            @default("pl")
+  status       ReservationStatus @default(PENDING)
+  confirmToken String            @unique
+  cancelToken  String            @unique
+  /// PENDING po tym czasie nie blokuje prezentu (wygasa leniwie).
+  expiresAt    DateTime
+  confirmedAt  DateTime?
+  cancelledAt  DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([giftId, status])
+  @@map("gift_reservation")
+}
+
+// ─── RODO ───────────────────────────────────────────────────────
+
+enum ConsentKind {
+  RSVP
+  GIFT_RESERVATION
+  JOIN_REQUEST
+}
+
+model ConsentLog {
+  id          String      @id @default(cuid())
+  weddingId   String
+  wedding     Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  householdId String?
+  household   Household?  @relation(fields: [householdId], references: [id], onDelete: SetNull)
+  kind        ConsentKind
+  email       String?
+  textVersion String
+  ipHash      String?
+  createdAt   DateTime    @default(now())
+
+  @@index([weddingId])
+  @@map("consent_log")
 }

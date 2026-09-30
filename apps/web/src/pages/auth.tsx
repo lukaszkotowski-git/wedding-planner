@@ -38,7 +38,9 @@ export function LoginPage() {
     setError(null);
     const { error } = await signIn.email(values);
     if (error) return setError(error.message ?? t("auth.genericError"));
-    navigate("/app");
+    const next = sessionStorage.getItem("afterLogin");
+    sessionStorage.removeItem("afterLogin");
+    navigate(next ?? "/app");
   });
 
   return (
@@ -90,7 +92,7 @@ export function RegisterPage() {
     const { error } = await signUp.email({
       ...values,
       locale: i18n.resolvedLanguage ?? "pl",
-      callbackURL: "/app",
+      callbackURL: sessionStorage.getItem("afterLogin") ?? "/app",
     });
     if (error) return setError(error.message ?? t("auth.genericError"));
     setSentTo(values.email);

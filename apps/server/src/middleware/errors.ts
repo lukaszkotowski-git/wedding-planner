@@ -9,7 +9,7 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (err instanceof HttpError) {
-    res.status(err.status).json({ error: err.code });
+    res.status(err.status).json({ error: err.code, ...err.details });
     return;
   }
   if (err instanceof ZodError) {
