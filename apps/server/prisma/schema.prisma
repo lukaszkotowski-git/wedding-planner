@@ -1,0 +1,127 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Better Auth ────────────────────────────────────────────────
+
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  locale        String    @default("pl")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   WeddingMember[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ─── Wesele ─────────────────────────────────────────────────────
+
+enum CeremonyType {
+  CIVIL
+  CHURCH
+  CIVIL_RECEPTION_ONLY
+}
+
+enum PlanId {
+  START
+  STANDARD
+  PREMIUM
+}
+
+enum WeddingRole {
+  OWNER
+  PARTNER
+  CO_PLANNER
+  VIEWER
+}
+
+model Wedding {
+  id             String          @id @default(cuid())
+  slug           String          @unique
+  partnerOneName String
+  partnerTwoName String
+  date           DateTime        @db.Date
+  timezone       String          @default("Europe/Warsaw")
+  locale         String          @default("pl")
+  ceremonyType   CeremonyType
+  plan           PlanId          @default(START)
+  planValidUntil DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+  members        WeddingMember[]
+
+  @@map("wedding")
+}
+
+model WeddingMember {
+  id        String      @id @default(cuid())
+  weddingId String
+  wedding   Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      WeddingRole
+  createdAt DateTime    @default(now())
+
+  @@unique([weddingId, userId])
+  @@index([userId])
+  @@map("wedding_member")
+}

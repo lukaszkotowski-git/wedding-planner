@@ -1,0 +1,75 @@
+{
+  "app": {
+    "name": "Wedding Planner",
+    "tagline": "Zaplanujcie wesele razem, bez arkuszy i chaosu."
+  },
+  "nav": {
+    "dashboard": "Pulpit",
+    "logout": "Wyloguj",
+    "login": "Zaloguj się",
+    "register": "Załóż konto",
+    "language": "Język",
+    "theme": "Motyw"
+  },
+  "auth": {
+    "email": "E-mail",
+    "password": "Hasło",
+    "name": "Imię",
+    "loginTitle": "Zaloguj się",
+    "registerTitle": "Załóż konto",
+    "loginSubmit": "Zaloguj",
+    "registerSubmit": "Utwórz konto",
+    "withGoogle": "Kontynuuj z Google",
+    "noAccount": "Nie masz konta?",
+    "haveAccount": "Masz już konto?",
+    "forgotPassword": "Nie pamiętasz hasła?",
+    "checkEmail": "Sprawdź skrzynkę. Wysłaliśmy link aktywacyjny na {{email}}.",
+    "passwordMin": "Hasło musi mieć co najmniej 8 znaków.",
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+  },
+  "dashboard": {
+    "title": "Twoje wesela",
+    "empty": "Nie masz jeszcze żadnego wesela.",
+    "create": "Utwórz wesele",
+    "daysLeft_one": "Został {{count}} dzień",
+    "daysLeft_few": "Zostały {{count}} dni",
+    "daysLeft_many": "Zostało {{count}} dni",
+    "daysLeft_other": "Zostało {{count}} dni"
+  },
+  "wedding": {
+    "partnerOne": "Imię pierwszej osoby",
+    "partnerTwo": "Imię drugiej osoby",
+    "date": "Data ślubu",
+    "ceremonyType": "Rodzaj ceremonii",
+    "ceremony": {
+      "CIVIL": "Ślub cywilny",
+      "CHURCH": "Ślub kościelny (konkordatowy)",
+      "CIVIL_RECEPTION_ONLY": "Cywilny + przyjęcie"
+    },
+    "slug": "Adres strony",
+    "locale": "Język gości",
+    "slugTaken": "Ten adres jest już zajęty.",
+    "submit": "Utwórz"
+  },
+  "public": {
+    "notFound": "Nie znaleziono wesela.",
+    "invite": "Zapraszamy na nasz ślub"
+  },
+  "common": {
+    "loading": "Ładowanie…",
+    "notFound": "Nie znaleziono strony."
+  },
+  "mail": {
+    "verify": {
+      "subject": "Potwierdź adres e-mail",
+      "body": "Cześć {{name}}! Kliknij poniższy link, aby aktywować konto.",
+      "cta": "Aktywuj konto"
+    },
+    "reset": {
+      "subject": "Zmiana hasła",
+      "body": "Otrzymaliśmy prośbę o zmianę hasła. Jeśli to nie Ty, zignoruj tę wiadomość.",
+      "cta": "Ustaw nowe hasło"
+    },
+    "footer": "Wiadomość wysłana automatycznie. Nie odpowiadaj na nią."
+  }
+}

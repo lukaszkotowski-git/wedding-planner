@@ -1,0 +1,73 @@
+{
+  "app": {
+    "name": "Wedding Planner",
+    "tagline": "Plan your wedding together, without spreadsheets and chaos."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "logout": "Log out",
+    "login": "Log in",
+    "register": "Sign up",
+    "language": "Language",
+    "theme": "Theme"
+  },
+  "auth": {
+    "email": "Email",
+    "password": "Password",
+    "name": "Name",
+    "loginTitle": "Log in",
+    "registerTitle": "Create an account",
+    "loginSubmit": "Log in",
+    "registerSubmit": "Create account",
+    "withGoogle": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?",
+    "forgotPassword": "Forgot your password?",
+    "checkEmail": "Check your inbox. We sent an activation link to {{email}}.",
+    "passwordMin": "Password must be at least 8 characters.",
+    "genericError": "Something went wrong. Please try again."
+  },
+  "dashboard": {
+    "title": "Your weddings",
+    "empty": "You don't have any weddings yet.",
+    "create": "Create a wedding",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left"
+  },
+  "wedding": {
+    "partnerOne": "First partner's name",
+    "partnerTwo": "Second partner's name",
+    "date": "Wedding date",
+    "ceremonyType": "Ceremony type",
+    "ceremony": {
+      "CIVIL": "Civil ceremony",
+      "CHURCH": "Church ceremony",
+      "CIVIL_RECEPTION_ONLY": "Civil + reception"
+    },
+    "slug": "Page address",
+    "locale": "Guest language",
+    "slugTaken": "This address is already taken.",
+    "submit": "Create"
+  },
+  "public": {
+    "notFound": "Wedding not found.",
+    "invite": "You're invited to our wedding"
+  },
+  "common": {
+    "loading": "Loading…",
+    "notFound": "Page not found."
+  },
+  "mail": {
+    "verify": {
+      "subject": "Confirm your email address",
+      "body": "Hi {{name}}! Click the link below to activate your account.",
+      "cta": "Activate account"
+    },
+    "reset": {
+      "subject": "Reset your password",
+      "body": "We received a request to reset your password. If this wasn't you, ignore this email.",
+      "cta": "Set a new password"
+    },
+    "footer": "This is an automated message. Please do not reply."
+  }
+}

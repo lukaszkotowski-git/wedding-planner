@@ -1,0 +1,25 @@
+{
+  "name": "wedding-planner",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @wedding/server & npm run dev --workspace @wedding/web",
+    "dev:server": "npm run dev --workspace @wedding/server",
+    "dev:web": "npm run dev --workspace @wedding/web",
+    "build": "npm run build --workspace @wedding/web && npm run build --workspace @wedding/server",
+    "start": "npm run start --workspace @wedding/server",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate --workspace @wedding/server",
+    "db:generate": "npm run db:generate --workspace @wedding/server",
+    "services:up": "docker compose up -d",
+    "services:down": "docker compose down"
+  }
+}
