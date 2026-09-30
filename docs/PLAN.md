@@ -1,6 +1,6 @@
 # Wedding Planner: plan produktu i implementacji
 
-> Status: szkic 3 (2026-09-30). Fazy 0 i 1 zrealizowane. Pozostałe otwarte pytania w sekcji 11.
+> Status: szkic 4 (2026-09-30). Fazy 0–2 zrealizowane. Pozostałe otwarte pytania w sekcji 11.
 
 ## 1. Decyzje produktowe
 
@@ -291,13 +291,17 @@ Nagłówki pogrubione, zamrożony pierwszy wiersz, autofiltr, szerokości kolumn
 - [ ] Przegląd UI w przeglądarce (desktop + telefon)
 - [ ] Treść polityki prywatności i regulaminu do weryfikacji prawnej
 
-### Faza 2: Planowanie
-- [ ] Szablony zadań PL/EN per typ ceremonii, generowanie, przeliczanie dat
-- [ ] Zadania: własne, przypisanie osoby, statusy, filtry, kategorie
-- [ ] Kalendarz (zadania, płatności, spotkania, części wydarzenia)
-- [ ] Budżet: kategorie, wydatki, płatności/zaliczki, szacunek cateringu (goście × cena, progi dzieci)
-- [ ] Usługodawcy: kontakty, statusy, umowy (upload PDF)
-- [ ] Eksport: zadania, budżet, usługodawcy
+### Faza 2: Planowanie ✅
+- [x] Szablony zadań PL/EN w kodzie (`packages/shared/src/task-templates.ts`, 49 zadań): ścieżki kościelna (konkordatowa), cywilna, cywilna + przyjęcie, po ślubie
+- [x] Generowanie przy tworzeniu wesela + przycisk „dodaj standardowe zadania” (idempotentny, po zmianie typu ceremonii dogenerowuje nową ścieżkę)
+- [x] Terminy względne przesuwają się ze zmianą daty ślubu; ręczna zmiana terminu je odpina
+- [x] Zadania: własne, osoby (domyślnie para; także bez konta), statusy, kategorie, filtry, grupy (po terminie / 30 dni / później / bez terminu / zrobione)
+- [x] Kalendarz: siatka miesiąca + lista; części wesela, terminy zadań, raty (tylko para), spotkania z usługodawcami
+- [x] Budżet (Standard+, tylko para): kategorie z planem, koszty z ratami, zapłacono / do zapłaty, zaległe raty, szacunek cateringu (potwierdzeni / maksymalnie, dzieci wg progów)
+- [x] Usługodawcy (Standard+): kontakty, statusy, umowy PDF bez publicznego adresu
+- [x] Eksport: arkusze Zadania, Usługodawcy, Budżet (budżet tylko dla pary)
+- [x] Pulpit: postęp zadań, zaległe, najbliższe zadania
+- [x] Decyzja: zadania z terminem sprzed założenia wesela zostają w grupie „Po terminie” (informacja, co powinno być już zrobione)
 
 ### Faza 3: Goście+
 - [ ] Import gości z XLSX/CSV (szablon do pobrania, podgląd, mapowanie kolumn, walidacja)

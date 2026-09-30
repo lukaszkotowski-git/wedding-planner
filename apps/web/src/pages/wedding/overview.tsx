@@ -6,7 +6,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
-import { daysUntil } from "@/lib/format";
+import { daysUntil, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Stats } from "@/lib/types";
 import { useWedding, weddingKeys } from "./context";
 
@@ -41,6 +42,43 @@ function Bar({ label, value, total }: { label: ReactNode; value: number; total: 
   );
 }
 
+function TasksCard({ tasks }: { tasks: Stats["tasks"] }) {
+  const { t, i18n } = useTranslation();
+  if (!tasks.total) return null;
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle>{t("tasks.next")}</CardTitle>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/tasks">{t("panel.tasks")}</Link>
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Bar label={t("tasks.progress", { done: tasks.done, total: tasks.total })} value={tasks.done} total={tasks.total} />
+        {tasks.overdue > 0 && <p className="text-sm font-medium text-destructive">{t("tasks.overdueCount", { count: tasks.overdue })}</p>}
+        {tasks.next.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("tasks.allDone")}</p>
+        ) : (
+          <ul className="space-y-2 text-sm">
+            {tasks.next.map((task) => {
+              const late = task.dueDate && daysUntil(task.dueDate) < 0;
+              return (
+                <li key={task.id} className="flex justify-between gap-3">
+                  <span className="min-w-0 truncate">{task.title}</span>
+                  <span className={cn("shrink-0 text-muted-foreground", late && "font-medium text-destructive")}>
+                    {task.dueDate ? formatDate(task.dueDate, i18n.resolvedLanguage, "medium") : "—"}
+                    {task.assignee && ` · ${task.assignee}`}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function OverviewPage() {
   const { t } = useTranslation();
   const wedding = useWedding();
@@ -54,6 +92,7 @@ export function OverviewPage() {
 
   if (s.households.total === 0) {
     return (
+      <div className="grid gap-4 lg:grid-cols-2">
       <Card>
         <CardContent className="flex flex-col items-center gap-4 py-12 text-center">
           {days >= 0 && <p className="font-serif text-5xl font-semibold">{t("dashboard.daysLeft", { count: days })}</p>}
@@ -63,6 +102,8 @@ export function OverviewPage() {
           </Button>
         </CardContent>
       </Card>
+      <TasksCard tasks={s.tasks} />
+      </div>
     );
   }
 
@@ -101,6 +142,7 @@ export function OverviewPage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
+        <TasksCard tasks={s.tasks} />
         <Card>
           <CardHeader>
             <CardTitle>{t("overview.parts")}</CardTitle>

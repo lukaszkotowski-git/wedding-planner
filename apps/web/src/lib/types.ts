@@ -1,4 +1,4 @@
-import type { CeremonyType, GuestSide, GuestType, PlanId, RsvpMode, WeddingRole } from "@wedding/shared";
+import type { CeremonyType, GuestSide, GuestType, PlanId, RsvpMode, TaskCategory, WeddingRole } from "@wedding/shared";
 
 export interface Wedding {
   id: string;
@@ -14,6 +14,7 @@ export interface Wedding {
   welcomeMessage: string | null;
   giftsIntro: string | null;
   cashGiftInfo: string | null;
+  platePriceCents: number | null;
   role: WeddingRole;
 }
 
@@ -140,9 +141,112 @@ export interface Stats {
   logistics: { accommodation: number; transport: number };
   gifts: { total: number; reserved: number };
   pendingJoinRequests: number;
+  tasks: {
+    total: number;
+    done: number;
+    overdue: number;
+    next: { id: string; title: string; dueDate: string | null; assignee: string | null }[];
+  };
 }
 
 export interface Team {
   members: { id: string; role: WeddingRole; isMe: boolean; user: { id: string; name: string; email: string } }[];
   invitations: { id: string; email: string; role: WeddingRole; expiresAt: string }[];
+}
+
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "DONE";
+
+export interface Task {
+  id: string;
+  templateKey: string | null;
+  title: string;
+  description: string | null;
+  category: TaskCategory;
+  dueDate: string | null;
+  dueMode: "RELATIVE" | "FIXED";
+  status: TaskStatus;
+  doneAt: string | null;
+  assignee: { id: string; name: string } | null;
+}
+
+export interface Assignee {
+  id: string;
+  name: string;
+}
+
+export type CalendarKind = "PART" | "TASK" | "PAYMENT" | "ENTRY";
+
+export interface CalendarItem {
+  id: string;
+  kind: CalendarKind;
+  title: string;
+  date: string;
+  time: string | null;
+  endTime: string | null;
+  done: boolean;
+  location: string | null;
+  notes: string | null;
+  refId: string;
+}
+
+export interface CalendarEntry {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string | null;
+  location: string | null;
+  notes: string | null;
+  vendorId: string | null;
+}
+
+export type VendorStatus = "CONSIDERING" | "BOOKED" | "REJECTED";
+
+export interface Vendor {
+  id: string;
+  category: string;
+  name: string;
+  contactPerson: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  notes: string | null;
+  status: VendorStatus;
+  hasContract: boolean;
+  contractName: string | null;
+}
+
+export interface BudgetPayment {
+  id: string;
+  amountCents: number;
+  dueDate: string | null;
+  paidAt: string | null;
+  note: string | null;
+  overdue: boolean;
+}
+
+export interface BudgetExpense {
+  id: string;
+  title: string;
+  amountCents: number;
+  notes: string | null;
+  vendor: { id: string; name: string } | null;
+  paidCents: number;
+  payments: BudgetPayment[];
+}
+
+export interface BudgetCategory {
+  id: string;
+  name: string;
+  order: number;
+  plannedCents: number;
+  committedCents: number;
+  paidCents: number;
+  expenses: BudgetExpense[];
+}
+
+export interface Budget {
+  totals: { plannedCents: number; committedCents: number; paidCents: number };
+  catering: { platePriceCents: number | null; confirmedCents: number | null; maxCents: number | null };
+  categories: BudgetCategory[];
+  upcomingPayments: (BudgetPayment & { expenseTitle: string; categoryName: string })[];
 }

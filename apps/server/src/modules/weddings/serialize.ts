@@ -16,6 +16,7 @@ export function serializeWedding(w: Wedding) {
     welcomeMessage: w.welcomeMessage,
     giftsIntro: w.giftsIntro,
     cashGiftInfo: w.cashGiftInfo,
+    platePriceCents: w.platePriceCents,
   };
 }
 

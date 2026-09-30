@@ -4,7 +4,7 @@ import { effectiveParts } from "../guests/service";
 
 /** Liczby do pulpitu i arkusza „Podsumowanie”. Wszystko liczone w pamięci: wesele ma max kilkaset osób. */
 export async function computeStats(weddingId: string) {
-  const [parts, meals, tiers, households, gifts, pendingJoinRequests] = await Promise.all([
+  const [parts, meals, tiers, households, gifts, pendingJoinRequests, tasks] = await Promise.all([
     prisma.eventPart.findMany({ where: { weddingId }, orderBy: [{ order: "asc" }, { startsAt: "asc" }] }),
     prisma.mealOption.findMany({ where: { weddingId }, orderBy: { order: "asc" } }),
     prisma.childPriceTier.findMany({ where: { weddingId }, orderBy: { fromAge: "asc" } }),
@@ -14,7 +14,14 @@ export async function computeStats(weddingId: string) {
     }),
     prisma.gift.findMany({ where: { weddingId }, include: { reservations: true } }),
     prisma.joinRequest.count({ where: { weddingId, status: "PENDING" } }),
+    prisma.task.findMany({
+      where: { weddingId },
+      select: { id: true, title: true, dueDate: true, status: true, assignee: { select: { name: true } } },
+      orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+    }),
   ]);
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const openTasks = tasks.filter((t) => t.status !== "DONE");
 
   const guests = households.flatMap((h) => h.guests.map((g) => ({ ...g, household: h })));
   const attendingAny = (g: (typeof guests)[number]) => g.rsvps.some((r) => r.attending);
@@ -85,5 +92,16 @@ export async function computeStats(weddingId: string) {
       ).length,
     },
     pendingJoinRequests,
+    tasks: {
+      total: tasks.length,
+      done: tasks.length - openTasks.length,
+      overdue: openTasks.filter((t) => t.dueDate && t.dueDate.toISOString().slice(0, 10) < todayIso).length,
+      next: openTasks.slice(0, 5).map((t) => ({
+        id: t.id,
+        title: t.title,
+        dueDate: t.dueDate ? t.dueDate.toISOString().slice(0, 10) : null,
+        assignee: t.assignee?.name ?? null,
+      })),
+    },
   };
 }

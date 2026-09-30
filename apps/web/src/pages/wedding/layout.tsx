@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Download, ExternalLink, Gift, LayoutDashboard, Settings, Users, UsersRound } from "lucide-react";
+import { ArrowLeft, Briefcase, CalendarDays, Download, ExternalLink, Gift, LayoutDashboard, ListChecks, Settings, Users, UsersRound, Wallet } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Link, Redirect, Route, Switch, useRoute } from "wouter";
 import { Badge } from "@/components/ui/badge";
@@ -7,17 +7,25 @@ import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
 import type { Wedding } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { BudgetPage } from "./budget";
+import { CalendarPage } from "./calendar";
 import { GiftsPage } from "./gifts";
 import { GuestsPage } from "./guests";
 import { OverviewPage } from "./overview";
 import { SettingsPage } from "./settings";
+import { TasksPage } from "./tasks";
 import { TeamPage } from "./team";
+import { VendorsPage } from "./vendors";
 import { WeddingContext, weddingKeys } from "./context";
 
 const NAV = [
   { path: "", icon: LayoutDashboard, label: "panel.overview" },
   { path: "/guests", icon: Users, label: "panel.guests" },
   { path: "/gifts", icon: Gift, label: "panel.gifts" },
+  { path: "/tasks", icon: ListChecks, label: "panel.tasks" },
+  { path: "/calendar", icon: CalendarDays, label: "panel.calendar" },
+  { path: "/budget", icon: Wallet, label: "panel.budget" },
+  { path: "/vendors", icon: Briefcase, label: "panel.vendors" },
   { path: "/settings", icon: Settings, label: "panel.settings" },
   { path: "/team", icon: UsersRound, label: "panel.team" },
 ] as const;
@@ -99,6 +107,10 @@ export function WeddingLayout({ id }: { id: string }) {
           <Route path="/" component={OverviewPage} />
           <Route path="/guests" component={GuestsPage} />
           <Route path="/gifts" component={GiftsPage} />
+          <Route path="/tasks" component={TasksPage} />
+          <Route path="/calendar" component={CalendarPage} />
+          <Route path="/budget" component={BudgetPage} />
+          <Route path="/vendors" component={VendorsPage} />
           <Route path="/settings" component={SettingsPage} />
           <Route path="/team" component={TeamPage} />
           <Route>

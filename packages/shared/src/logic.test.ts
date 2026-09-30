@@ -86,3 +86,47 @@ describe("schemas", () => {
     expect(tierForAge(tiers, 15)).toBeNull();
   });
 });
+
+import { cateringEstimate, expenseInputSchema } from "./schemas/planning";
+import { addDays, templatesFor, TASK_TEMPLATES } from "./task-templates";
+
+describe("task templates", () => {
+  it("has unique keys", () => {
+    expect(new Set(TASK_TEMPLATES.map((t) => t.key)).size).toBe(TASK_TEMPLATES.length);
+  });
+
+  it("splits church and civil formalities", () => {
+    const church = templatesFor("CHURCH").map((t) => t.key);
+    const civil = templatesFor("CIVIL").map((t) => t.key);
+    expect(church).toContain("marriage_course");
+    expect(church).not.toContain("usc_declaration");
+    expect(civil).toContain("usc_declaration");
+    expect(civil).not.toContain("banns");
+    expect(civil).not.toContain("book_venue"); // bez przyjęcia weselnego
+    expect(templatesFor("CIVIL_RECEPTION_ONLY").map((t) => t.key)).toEqual(expect.arrayContaining(["usc_declaration", "book_venue"]));
+  });
+
+  it("adds days across month and year boundaries", () => {
+    expect(addDays("2027-06-19", -365)).toBe("2026-06-19");
+    expect(addDays("2027-03-01", -1)).toBe("2027-02-28");
+    expect(addDays("2027-12-20", 14)).toBe("2028-01-03");
+  });
+});
+
+describe("budget", () => {
+  it("prices children by tier and out-of-tier children at 100%", () => {
+    const tiers = [
+      { fromAge: 0, toAge: 3, pricePercent: 0 },
+      { fromAge: 4, toAge: 12, pricePercent: 50 },
+    ];
+    expect(cateringEstimate({ platePriceCents: 300_00, adults: 10, childAges: [2, 7, 15, null], tiers })).toBe(
+      10 * 300_00 + 0 + 150_00 + 300_00 + 300_00,
+    );
+  });
+
+  it("rejects installments larger than the expense", () => {
+    expect(expenseInputSchema.safeParse({ categoryId: "c", title: "Sala", amount: "1000", payments: [{ amount: 600 }, { amount: 500 }] }).success).toBe(false);
+    const ok = expenseInputSchema.parse({ categoryId: "c", title: "Sala", amount: "45 000,50", payments: [{ amount: "5000" }] });
+    expect(ok.amount).toBe(4_500_050);
+  });
+});

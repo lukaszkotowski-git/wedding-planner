@@ -26,3 +26,11 @@ export async function guestSlots(weddingId: string, excludeHouseholdId?: string)
   ]);
   return guests + plusOnes;
 }
+
+/** Middleware dla modułów płatnych (budżet, usługodawcy). */
+export function requireFeature(feature: Feature): import("express").RequestHandler {
+  return (req, _res, next) => {
+    assertFeature(req.wedding!, feature);
+    next();
+  };
+}

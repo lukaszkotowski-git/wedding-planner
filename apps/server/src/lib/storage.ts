@@ -51,6 +51,14 @@ export async function storeImage(prefix: string, input: Buffer): Promise<string>
   return key;
 }
 
+/** Plik bez przetwarzania (np. umowa PDF). */
+export async function storeFile(prefix: string, body: Buffer, contentType: string, ext: string): Promise<string> {
+  await ensureBucket();
+  const key = `${prefix}/${randomToken(16)}.${ext}`;
+  await s3.send(new PutObjectCommand({ Bucket: env.S3_BUCKET, Key: key, Body: body, ContentType: contentType }));
+  return key;
+}
+
 export async function readObject(key: string) {
   const res = await s3.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: key }));
   return { body: res.Body as Readable, contentType: res.ContentType ?? "application/octet-stream", length: res.ContentLength };

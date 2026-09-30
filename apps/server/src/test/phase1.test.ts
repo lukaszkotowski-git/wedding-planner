@@ -432,7 +432,7 @@ describe("excel export", () => {
 
     await setPlan(id, "STANDARD");
     const full = await download(owner, id);
-    expect(full.worksheets.map((w) => w.name)).toEqual(["Podsumowanie", "Goście", "Menu", "Dzieci", "Prezenty"]);
+    expect(full.worksheets.map((w) => w.name)).toEqual(["Podsumowanie", "Goście", "Menu", "Dzieci", "Prezenty", "Zadania", "Usługodawcy", "Budżet"]);
   });
 
   it("co-planners do not get gift reserver details", async () => {

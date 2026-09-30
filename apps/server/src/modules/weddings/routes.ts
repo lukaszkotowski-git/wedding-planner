@@ -2,16 +2,26 @@ import { Prisma } from "@prisma/client";
 import { createWeddingSchema, updateWeddingSchema } from "@wedding/shared";
 import { Router } from "express";
 import { prisma } from "../../lib/db";
-import { wallClockToDate } from "../../lib/dates";
+import { isoDate, wallClockToDate } from "../../lib/dates";
 import { conflict } from "../../lib/http";
 import { t } from "../../lib/i18n";
 import { requireAuth, requireRole, requireWeddingRole } from "../../middleware/auth";
+import { budgetRouter } from "../budget/routes";
+import { calendarRouter } from "../calendar/routes";
 import { exportRouter } from "../export/routes";
 import { giftsAdminRouter } from "../gifts/admin-routes";
 import { householdsRouter, joinRequestsAdminRouter } from "../guests/admin-routes";
 import { settingsRouter } from "../settings/routes";
 import { statsRouter } from "../stats/routes";
+import { assigneesRouter, tasksRouter } from "../tasks/routes";
+import {
+  createDefaultBudgetCategories,
+  ensureDefaultAssignees,
+  generateTemplateTasks,
+  recomputeRelativeDueDates,
+} from "../tasks/service";
 import { teamRouter } from "../team/routes";
+import { vendorsRouter } from "../vendors/routes";
 import { serializeWedding } from "./serialize";
 
 export const weddingsRouter = Router();
@@ -31,7 +41,8 @@ weddingsRouter.post("/", async (req, res) => {
   const input = createWeddingSchema.parse(req.body);
   const l = input.locale;
   try {
-    const wedding = await prisma.wedding.create({
+    const wedding = await prisma.$transaction(async (tx) => {
+      const created = await tx.wedding.create({
       data: {
         slug: input.slug,
         partnerOneName: input.partnerOneName,
@@ -61,6 +72,11 @@ weddingsRouter.post("/", async (req, res) => {
           ],
         },
       },
+      });
+      await generateTemplateTasks(tx, created);
+      await ensureDefaultAssignees(tx, created);
+      await createDefaultBudgetCategories(tx, created);
+      return created;
     });
     res.status(201).json({ ...serializeWedding(wedding), role: "OWNER" });
   } catch (e) {
@@ -78,15 +94,21 @@ wedding.get("/", (req, res) => {
 });
 
 wedding.patch("/", requireRole("PARTNER"), async (req, res) => {
-  const input = updateWeddingSchema.parse(req.body);
+  const { platePrice, ...input } = updateWeddingSchema.parse(req.body);
+  const dateChanged = isoDate(req.wedding!.date) !== input.date;
   try {
-    const updated = await prisma.wedding.update({
-      where: { id: req.wedding!.id },
-      data: {
-        ...input,
-        date: new Date(input.date),
-        rsvpDeadline: input.rsvpDeadline ? new Date(input.rsvpDeadline) : null,
-      },
+    const updated = await prisma.$transaction(async (tx) => {
+      const w = await tx.wedding.update({
+        where: { id: req.wedding!.id },
+        data: {
+          ...input,
+          platePriceCents: platePrice,
+          date: new Date(input.date),
+          rsvpDeadline: input.rsvpDeadline ? new Date(input.rsvpDeadline) : null,
+        },
+      });
+      if (dateChanged) await recomputeRelativeDueDates(tx, w.id, input.date);
+      return w;
     });
     res.json({ ...serializeWedding(updated), role: req.weddingRole });
   } catch (e) {
@@ -102,3 +124,8 @@ wedding.use("/gifts", giftsAdminRouter);
 wedding.use("/team", teamRouter);
 wedding.use("/stats", statsRouter);
 wedding.use("/export", exportRouter);
+wedding.use("/tasks", tasksRouter);
+wedding.use("/assignees", assigneesRouter);
+wedding.use("/calendar", calendarRouter);
+wedding.use("/vendors", vendorsRouter);
+wedding.use("/budget", budgetRouter);

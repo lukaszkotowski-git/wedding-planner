@@ -34,6 +34,19 @@ export const updateWeddingSchema = createWeddingSchema.extend({
   welcomeMessage: optionalText(4000),
   giftsIntro: optionalText(2000),
   cashGiftInfo: optionalText(2000),
+  /** Cena talerza dorosłego w złotych (puste = brak). */
+  platePrice: z
+    .union([z.number(), z.string()])
+    .nullish()
+    .transform((v, ctx) => {
+      if (v === null || v === undefined || v === "") return null;
+      const n = typeof v === "number" ? v : Number(String(v).replace(",", "."));
+      if (!Number.isFinite(n) || n < 0 || n > 100_000) {
+        ctx.addIssue({ code: "custom", message: "invalid_amount" });
+        return z.NEVER;
+      }
+      return Math.round(n * 100);
+    }),
 });
 export type UpdateWeddingInput = z.input<typeof updateWeddingSchema>;
 

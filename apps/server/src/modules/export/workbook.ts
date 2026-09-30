@@ -3,6 +3,7 @@ import type { Wedding } from "@prisma/client";
 import ExcelJS from "exceljs";
 import { prisma } from "../../lib/db";
 import { t as translate } from "../../lib/i18n";
+import { budgetOverview } from "../budget/service";
 import { computeStats } from "../stats/service";
 import { effectiveParts, householdStatus, householdInclude, rsvpUrl } from "../guests/service";
 
@@ -220,6 +221,102 @@ export async function buildWorkbook(wedding: Wedding, role: WeddingRole, locale:
   giftsWs.columns.forEach((col) => {
     if (col.key && moneyKeys.has(col.key)) col.numFmt = "#,##0.00";
   });
+
+  // ─── Zadania ───
+  const tasks = await prisma.task.findMany({
+    where: { weddingId: wedding.id },
+    include: { assignee: true },
+    orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
+  });
+  const tasksWs = addSheet(wb, t("sheets.tasks"), [
+    { header: t("cols.task"), key: "title", width: 50 },
+    { header: t("cols.category"), key: "category", width: 16 },
+    { header: t("cols.dueDate"), key: "dueDate", width: 12 },
+    { header: t("cols.assignee"), key: "assignee", width: 18 },
+    { header: t("cols.status"), key: "status", width: 14 },
+  ]);
+  for (const task of tasks) {
+    tasksWs.addRow({
+      title: task.title,
+      category: translate(locale, `tasks.categories.${task.category}`),
+      dueDate: task.dueDate,
+      assignee: task.assignee?.name,
+      status: t(`values.${task.status}`),
+    });
+  }
+  tasksWs.getColumn("dueDate").numFmt = "yyyy-mm-dd";
+
+  // ─── Usługodawcy ───
+  if (PLANS[wedding.plan].features.vendors) {
+    const vendors = await prisma.vendor.findMany({ where: { weddingId: wedding.id }, orderBy: [{ category: "asc" }, { name: "asc" }] });
+    const vendorsWs = addSheet(wb, t("sheets.vendors"), [
+      { header: t("cols.category"), key: "category", width: 18 },
+      { header: t("cols.vendor"), key: "name", width: 28 },
+      { header: t("cols.status"), key: "status", width: 14 },
+      { header: t("cols.contact"), key: "contact", width: 20 },
+      { header: t("cols.phone"), key: "phone", width: 14 },
+      { header: t("cols.email"), key: "email", width: 26 },
+      { header: t("cols.website"), key: "website", width: 30 },
+      { header: t("cols.notes"), key: "notes", width: 40 },
+    ]);
+    for (const v of vendors) {
+      vendorsWs.addRow({
+        category: translate(locale, `vendors.categories.${v.category}`),
+        name: v.name,
+        status: t(`values.${v.status}`),
+        contact: v.contactPerson,
+        phone: v.phone,
+        email: v.email,
+        website: v.website,
+        notes: v.notes,
+      });
+    }
+  }
+
+  // ─── Budżet (jak w panelu: tylko para) ───
+  if (PLANS[wedding.plan].features.budget && hasRole(role, "PARTNER")) {
+    const b = await budgetOverview(wedding.id, wedding.platePriceCents);
+    const budgetWs = addSheet(wb, t("sheets.budget"), [
+      { header: t("cols.category"), key: "category", width: 26 },
+      { header: t("cols.item"), key: "item", width: 32 },
+      { header: t("cols.planned"), key: "planned", width: 12 },
+      { header: t("cols.committed"), key: "committed", width: 12 },
+      { header: t("cols.paid"), key: "paid", width: 12 },
+      { header: t("cols.toPay"), key: "toPay", width: 12 },
+      { header: t("cols.dueDate"), key: "dueDate", width: 12 },
+      { header: t("cols.paidAt"), key: "paidAt", width: 14 },
+    ]);
+    for (const c of b.categories) {
+      const row = budgetWs.addRow({
+        category: c.name,
+        planned: money(c.plannedCents),
+        committed: money(c.committedCents),
+        paid: money(c.paidCents),
+        toPay: money(c.committedCents - c.paidCents),
+      });
+      row.font = { bold: true };
+      for (const e of c.expenses) {
+        budgetWs.addRow({ item: e.title, committed: money(e.amountCents), paid: money(e.paidCents), toPay: money(e.amountCents - e.paidCents) });
+        for (const p of e.payments) {
+          budgetWs.addRow({
+            item: `  ${t("values.installment")}${p.note ? `: ${p.note}` : ""}`,
+            committed: money(p.amountCents),
+            dueDate: p.dueDate,
+            paidAt: p.paidAt,
+          });
+        }
+      }
+    }
+    const total = budgetWs.addRow({
+      category: t("values.total"),
+      planned: money(b.totals.plannedCents),
+      committed: money(b.totals.committedCents),
+      paid: money(b.totals.paidCents),
+      toPay: money(b.totals.committedCents - b.totals.paidCents),
+    });
+    total.font = { bold: true };
+    for (const key of ["planned", "committed", "paid", "toPay"]) budgetWs.getColumn(key).numFmt = "#,##0.00";
+  }
 
   return wb;
 }
