@@ -3,19 +3,19 @@ import { useTheme } from "next-themes";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { signOut, useSession } from "@/lib/auth-client";
-import { LOCALES } from "@wedding/shared";
+import { signOut, useAuth } from "@/lib/auth-client";
+import { LOCALES } from "@wedding/shared/locales";
 
 export function AppHeader() {
   const { t, i18n } = useTranslation();
-  const { data } = useSession();
+  const { user } = useAuth();
   const { resolvedTheme, setTheme } = useTheme();
   const [, navigate] = useLocation();
 
   return (
     <header className="border-b">
       <div className="container flex h-14 items-center justify-between gap-4">
-        <Link href={data ? "/app" : "/"} className="font-serif text-xl font-semibold">
+        <Link href={user ? "/app" : "/"} className="font-serif text-xl font-semibold">
           {t("app.name")}
         </Link>
         <div className="flex items-center gap-1">
@@ -40,7 +40,7 @@ export function AppHeader() {
           >
             {resolvedTheme === "dark" ? <Sun /> : <Moon />}
           </Button>
-          {data ? (
+          {user ? (
             <Button
               variant="ghost"
               size="sm"

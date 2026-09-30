@@ -55,6 +55,9 @@ interface GuestAnswer {
 
 export function RsvpPage({ token }: { token: string }) {
   const { t, i18n } = useTranslation();
+  // Po wysłaniu dane są odświeżane i gospodarstwo jest już zablokowane; bez tej flagi gość zobaczyłby
+  // „odpowiedź została już wysłana” zamiast podziękowania.
+  const [submitted, setSubmitted] = useState(false);
   const { data, isPending, isError } = useQuery({
     queryKey: ["rsvp", token],
     queryFn: () => api<RsvpData>(`/public/rsvp/${encodeURIComponent(token)}`),
@@ -68,37 +71,53 @@ export function RsvpPage({ token }: { token: string }) {
   return (
     <main className="mx-auto max-w-2xl space-y-8 px-4 py-10 sm:py-16">
       <header className="space-y-2 text-center">
-        <Link href="/" className="font-serif text-4xl font-semibold hover:text-primary sm:text-5xl">
-          {w.partnerOneName} & {w.partnerTwoName}
-        </Link>
+        <h1 className="font-serif text-4xl font-semibold [overflow-wrap:anywhere] sm:text-5xl">
+          <Link href="/" className="hover:text-primary">
+            {w.partnerOneName} & {w.partnerTwoName}
+          </Link>
+        </h1>
         <p className="text-muted-foreground">{formatDate(w.date, i18n.resolvedLanguage, "full")}</p>
         <p className="pt-4 text-sm uppercase tracking-[0.2em] text-muted-foreground">{t("rsvp.for", { name: data.household.name })}</p>
       </header>
-      {data.household.locked ? (
+      {submitted ? (
+        <>
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+              <CheckCircle2 className="size-10 text-emerald-600" />
+              <p role="status" className="font-serif text-2xl font-semibold">
+                {t("rsvp.thanks")}
+              </p>
+            </CardContent>
+          </Card>
+          {data.household.locked && <LockedSummary data={data} showLockedInfo={false} />}
+        </>
+      ) : data.household.locked ? (
         <LockedSummary data={data} />
       ) : !w.rsvpOpen ? (
         <Card>
           <CardContent className="p-6 text-center">{t("publicPage.rsvpClosed")}</CardContent>
         </Card>
       ) : (
-        <RsvpForm token={token} data={data} />
+        <RsvpForm token={token} data={data} onSubmitted={() => setSubmitted(true)} />
       )}
     </main>
   );
 }
 
-function LockedSummary({ data }: { data: RsvpData }) {
+function LockedSummary({ data, showLockedInfo = true }: { data: RsvpData; showLockedInfo?: boolean }) {
   const { t } = useTranslation();
   const meal = (id: string | null) => data.mealOptions.find((m) => m.id === id)?.name;
   const people = data.guests.flatMap((g) => [g, ...(g.plusOne ? [g.plusOne] : [])]);
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
-        <p className="flex items-start gap-2">
-          <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          {t("rsvp.lockedInfo")}
-        </p>
-        <ul className="space-y-2 border-t pt-4 text-sm">
+        {showLockedInfo && (
+          <p className="flex items-start gap-2">
+            <Lock className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+            {t("rsvp.lockedInfo")}
+          </p>
+        )}
+        <ul className={cn("space-y-2 text-sm", showLockedInfo && "border-t pt-4")}>
           {people.map((g) => {
             const parts = data.eventParts.filter((p) => g.attendance[p.id]);
             return (
@@ -118,7 +137,7 @@ function LockedSummary({ data }: { data: RsvpData }) {
   );
 }
 
-function RsvpForm({ token, data }: { token: string; data: RsvpData }) {
+function RsvpForm({ token, data, onSubmitted }: { token: string; data: RsvpData; onSubmitted: () => void }) {
   const { t, i18n } = useTranslation();
   const qc = useQueryClient();
   const lang = i18n.resolvedLanguage;
@@ -178,21 +197,11 @@ function RsvpForm({ token, data }: { token: string; data: RsvpData }) {
       return api(`/public/rsvp/${encodeURIComponent(token)}?lang=${lang}`, { method: "POST", json: body });
     },
     onSuccess: () => {
+      onSubmitted();
       window.scrollTo({ top: 0, behavior: "smooth" });
       void qc.invalidateQueries({ queryKey: ["rsvp", token] });
     },
   });
-
-  if (submit.isSuccess) {
-    return (
-      <Card>
-        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
-          <CheckCircle2 className="size-10 text-emerald-600" />
-          <p className="font-serif text-2xl font-semibold">{t("rsvp.thanks")}</p>
-        </CardContent>
-      </Card>
-    );
-  }
 
   const incomplete = data.guests.some((g) => parts.some((p) => answers[g.id]!.attendance[p.id] === undefined));
 

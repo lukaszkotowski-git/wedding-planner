@@ -174,12 +174,17 @@ function TaskRow({
 }) {
   const { t, i18n } = useTranslation();
   const wedding = useWedding();
+  // Optymistycznie: checkbox reaguje od razu (stan ustawiany w handlerze kliknięcia), po odpowiedzi serwera
+  // wracamy do danych z serwera, a w razie błędu do poprzedniego stanu.
+  const [optimistic, setOptimistic] = useState<Task["status"] | null>(null);
   const patch = useMutation({
     mutationFn: (body: { status?: string; assigneeId?: string | null }) => api(`/weddings/${wedding.id}/tasks/${task.id}`, { method: "PATCH", json: body }),
     onSuccess: onChange,
     onError: (e) => toast.error(errorMessage(t, e)),
+    onSettled: () => setOptimistic(null),
   });
-  const done = task.status === "DONE";
+  const status = optimistic ?? task.status;
+  const done = status === "DONE";
   const days = task.dueDate ? daysUntil(task.dueDate) : null;
 
   return (
@@ -188,8 +193,12 @@ function TaskRow({
         type="checkbox"
         className="mt-1 size-4 shrink-0 cursor-pointer accent-[hsl(var(--primary))] disabled:cursor-default"
         checked={done}
-        disabled={!canEdit || patch.isPending}
-        onChange={(e) => patch.mutate({ status: e.target.checked ? "DONE" : "TODO" })}
+        disabled={!canEdit}
+        onChange={(e) => {
+          const next = e.target.checked ? "DONE" : "TODO";
+          setOptimistic(next);
+          patch.mutate({ status: next });
+        }}
         aria-label={task.title}
       />
       <div className="min-w-0 flex-1 space-y-1">

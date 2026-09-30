@@ -25,7 +25,9 @@
     "forgotPassword": "Forgot your password?",
     "checkEmail": "Check your inbox. We sent an activation link to {{email}}.",
     "passwordMin": "Password must be at least 8 characters.",
-    "genericError": "Something went wrong. Please try again."
+    "genericError": "Something went wrong. Please try again.",
+    "nameRequired": "Enter your name.",
+    "emailInvalid": "Enter a valid email address."
   },
   "dashboard": {
     "title": "Your weddings",

@@ -25,7 +25,17 @@ Maile w dev trafiają do Mailpit: http://localhost:8035
 | `npm run build` | build klienta i serwera |
 | `npm test` | testy (Vitest); serwer używa osobnej bazy `wedding_test`, czyszczonej przed każdym uruchomieniem |
 | `npm run typecheck` | TypeScript we wszystkich pakietach |
+| `npm run test:e2e` | testy e2e (Playwright + lokalny Chrome) na buildzie produkcyjnym; osobna baza `wedding_e2e`, porty 3300/5300, maile przez Mailpit |
 | `npm run db:migrate` | nowa migracja Prisma (dev) |
+
+### Testy e2e na Macu z Apple Silicon
+
+Jeśli terminal działa pod Rosettą (`uname -m` pokazuje `x86_64` na M1/M2), Chrome uruchomiony z niego też działa
+w trybie Intela i jest kilkadziesiąt razy wolniejszy. `npm run test:e2e` wykrywa to i uruchamia Playwrighta
+natywnie (`arch -arm64`), a serwery aplikacji zostawia w trybie x86_64. Wygodniej jest jednak wyłączyć
+„Open using Rosetta” dla terminala i przeinstalować `node_modules` — cały development będzie szybszy.
+
+Zrzuty ekranu z testów trafiają do `e2e/screenshots/` (ignorowane przez git).
 
 ## Deploy (Dokploy)
 

@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Redirect, Route, Switch } from "wouter";
 import { AppHeader } from "@/components/app-header";
-import { useSession } from "@/lib/auth-client";
+import { useAuth } from "@/lib/auth-client";
 import { LoginPage, RegisterPage } from "@/pages/auth";
 import { InvitePage } from "@/pages/invite";
 import { LandingPage } from "@/pages/landing";
@@ -13,10 +13,10 @@ const WeddingLayout = lazy(() => import("@/pages/wedding/layout").then((m) => ({
 const DashboardPage = lazy(() => import("@/pages/dashboard").then((m) => ({ default: m.DashboardPage })));
 
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { data, isPending } = useSession();
+  const { user, ready } = useAuth();
   const { t } = useTranslation();
-  if (isPending) return <p className="container py-16 text-muted-foreground">{t("common.loading")}</p>;
-  if (!data) {
+  if (!ready) return <p className="container py-16 text-muted-foreground">{t("common.loading")}</p>;
+  if (!user) {
     // Po zalogowaniu wracamy tam, gdzie użytkownik chciał wejść (np. link z zaproszenia do zespołu).
     sessionStorage.setItem("afterLogin", window.location.pathname);
     return <Redirect to="~/login" />;
@@ -25,9 +25,9 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 function GuestOnly({ children }: { children: ReactNode }) {
-  const { data, isPending } = useSession();
-  if (isPending) return null;
-  if (data) return <Redirect to={sessionStorage.getItem("afterLogin") ?? "/app"} />;
+  const { user, ready } = useAuth();
+  if (!ready) return null;
+  if (user) return <Redirect to={sessionStorage.getItem("afterLogin") ?? "/app"} />;
   return children;
 }
 

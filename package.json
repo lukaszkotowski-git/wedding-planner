@@ -4,7 +4,8 @@
   "type": "module",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "e2e"
   ],
   "engines": {
     "node": ">=22"
@@ -20,6 +21,7 @@
     "db:migrate": "npm run db:migrate --workspace @wedding/server",
     "db:generate": "npm run db:generate --workspace @wedding/server",
     "services:up": "docker compose up -d",
-    "services:down": "docker compose down"
+    "services:down": "docker compose down",
+    "test:e2e": "npm run test:e2e --workspace @wedding/e2e"
   }
 }

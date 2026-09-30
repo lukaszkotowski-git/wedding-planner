@@ -217,7 +217,9 @@ function CategoryRow({
   const wedding = useWedding();
   const invalidate = useInvalidateBudget();
   const [open, setOpen] = useState(false);
-  const [planned, setPlanned] = useState(zl(c.plannedCents));
+  // 0 zł pokazujemy jako puste pole z podpowiedzią „Plan”, a nie „0” w każdej kategorii.
+  const plannedText = (cents: number) => (cents ? zl(cents) : "");
+  const [planned, setPlanned] = useState(plannedText(c.plannedCents));
 
   const update = useMutation({
     mutationFn: () => api(`/weddings/${wedding.id}/budget/categories/${c.id}`, { method: "PUT", json: { name: c.name, planned: planned || 0, order: c.order } }),
@@ -253,7 +255,7 @@ function CategoryRow({
               placeholder={t("budget.planned")}
               value={planned}
               onChange={(e) => setPlanned(e.target.value)}
-              onBlur={() => planned !== zl(c.plannedCents) && update.mutate()}
+              onBlur={() => planned !== plannedText(c.plannedCents) && update.mutate()}
             />
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">

@@ -62,12 +62,11 @@ export function PublicWeddingPage({ slug }: { slug: string }) {
 
   return (
     <div className="min-h-screen">
-      <header className="flex min-h-[85vh] flex-col items-center justify-center gap-5 bg-gradient-to-b from-secondary/60 to-background px-4 text-center">
+      <header className="flex min-h-[60svh] flex-col items-center justify-center gap-5 bg-gradient-to-b from-secondary/60 to-background px-4 py-16 text-center sm:min-h-[75vh]">
         <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground">{t("public.invite")}</p>
-        <h1 className="font-serif text-6xl font-semibold leading-none sm:text-8xl">
-          {w.partnerOneName}
-          <span className="mx-3 text-primary sm:mx-5">&</span>
-          {w.partnerTwoName}
+        {/* Spacje między imionami pozwalają złamać linię na wąskim ekranie (długie imiona nie wystają). */}
+        <h1 className="max-w-full font-serif text-5xl font-semibold leading-tight [overflow-wrap:anywhere] sm:text-8xl sm:leading-none">
+          {w.partnerOneName} <span className="text-primary">&</span> {w.partnerTwoName}
         </h1>
         <p className="text-lg sm:text-xl">{formatDate(w.date, lang, "full")}</p>
         {days > 0 && <p className="text-sm text-muted-foreground">{t("dashboard.daysLeft", { count: days })}</p>}
@@ -89,7 +88,7 @@ export function PublicWeddingPage({ slug }: { slug: string }) {
 
       {w.eventParts.length > 0 && (
         <Section title={t("publicPage.schedule")}>
-          <ol className="relative space-y-8 border-l border-primary/30 pl-8">
+          <ol className="relative mx-auto w-fit max-w-full space-y-8 border-l border-primary/30 pl-8">
             {w.eventParts.map((p) => (
               <li key={p.id} className="relative">
                 <span className="absolute -left-[41px] top-1 flex size-5 items-center justify-center rounded-full border-2 border-primary bg-background" />

@@ -25,7 +25,9 @@
     "forgotPassword": "Nie pamiętasz hasła?",
     "checkEmail": "Sprawdź skrzynkę. Wysłaliśmy link aktywacyjny na {{email}}.",
     "passwordMin": "Hasło musi mieć co najmniej 8 znaków.",
-    "genericError": "Coś poszło nie tak. Spróbuj ponownie."
+    "genericError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "nameRequired": "Podaj imię.",
+    "emailInvalid": "Podaj poprawny adres e-mail."
   },
   "dashboard": {
     "title": "Twoje wesela",

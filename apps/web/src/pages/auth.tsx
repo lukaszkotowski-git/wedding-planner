@@ -56,7 +56,7 @@ export function LoginPage() {
       }
     >
       <form onSubmit={onSubmit} className="space-y-4" noValidate>
-        <Field id="email" label={t("auth.email")} error={form.formState.errors.email && t("auth.genericError")}>
+        <Field id="email" label={t("auth.email")} error={form.formState.errors.email && t("auth.emailInvalid")}>
           <Input id="email" type="email" autoComplete="email" {...form.register("email")} />
         </Field>
         <Field id="password" label={t("auth.password")}>
@@ -114,10 +114,10 @@ export function RegisterPage() {
         <p role="status">{t("auth.checkEmail", { email: sentTo })}</p>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
-          <Field id="name" label={t("auth.name")}>
+          <Field id="name" label={t("auth.name")} error={errors.name && t("auth.nameRequired")}>
             <Input id="name" autoComplete="given-name" aria-invalid={!!errors.name} {...form.register("name")} />
           </Field>
-          <Field id="email" label={t("auth.email")}>
+          <Field id="email" label={t("auth.email")} error={errors.email && t("auth.emailInvalid")}>
             <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} {...form.register("email")} />
           </Field>
           <Field id="password" label={t("auth.password")} error={errors.password && t("auth.passwordMin")}>

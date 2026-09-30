@@ -91,7 +91,9 @@ export function CalendarPage() {
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <Card className="min-w-0">
         <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
-          <CardTitle className="font-serif text-2xl capitalize">{title}</CardTitle>
+          <h2 className="font-serif text-2xl font-semibold capitalize" aria-live="polite">
+            {title}
+          </h2>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="icon" aria-label={t("calendar.prev")} onClick={() => move(-1)}>
               <ChevronLeft />

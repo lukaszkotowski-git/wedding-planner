@@ -50,4 +50,8 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /* Cormorant ma domyślnie cyfry nautyczne („0” wygląda jak „o”); w kwotach i godzinach potrzebne są wyrównane. */
+  .font-serif {
+    font-variant-numeric: lining-nums;
+  }
 }
